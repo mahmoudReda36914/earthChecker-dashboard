@@ -11,8 +11,11 @@ import ResetPasswordPage  from './features/auth/pages/ResetPasswordPage'
 import OverviewPage     from './features/overview/pages/OverviewPage'
 import ModulesPage      from './features/modules/pages/ModulesPage'
 import UpdateModulePage from './features/modules/pages/UpdateModulePage'
+import ModuleDetailPage from './features/modules/pages/ModuleDetailPage'
 import FormsBuilderPage from './features/forms/pages/FormsBuilderPage'
 import FormPreviewPage  from './features/forms/pages/FormPreviewPage'
+import CreateFormPage   from './features/forms/pages/CreateFormPage'
+import OrderFormsPage   from './features/forms/pages/OrderFormsPage'
 import AIAgentsPage     from './features/agents/pages/AIAgentsPage'
 import CreateAgentPage  from './features/agents/pages/CreateAgentPage'
 import UpdateAgentPage  from './features/agents/pages/UpdateAgentPage'
@@ -36,16 +39,21 @@ export default function App() {
         <Route path="/reset-password/:token"   element={<ResetPasswordPage />} />
 
         {/* Standalone — no dashboard chrome */}
-        <Route path="/form-preview" element={<FormPreviewPage />} />
+        <Route path="/form-preview"          element={<FormPreviewPage />} />
+        <Route path="/form-preview/:formId"  element={<FormPreviewPage />} />
 
         {/* Protected dashboard — requires valid session */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="overview" replace />} />
             <Route path="overview"              element={<OverviewPage />} />
-            <Route path="modules"               element={<ModulesPage />} />
-            <Route path="modules/:id/update"    element={<UpdateModulePage />} />
-            <Route path="forms"                 element={<FormsBuilderPage />} />
+            <Route path="modules"                             element={<ModulesPage />} />
+            <Route path="modules/:id"                        element={<ModuleDetailPage />} />
+            <Route path="modules/:id/update"                 element={<UpdateModulePage />} />
+            <Route path="modules/:id/forms/create"           element={<CreateFormPage />} />
+            <Route path="modules/:id/forms/:formId/edit"     element={<CreateFormPage />} />
+            <Route path="modules/:id/forms/order"            element={<OrderFormsPage />} />
+            <Route path="forms"                              element={<FormsBuilderPage />} />
             <Route path="agents"                element={<AIAgentsPage />} />
             <Route path="agents/create"         element={<CreateAgentPage />} />
             <Route path="agents/:id/update"     element={<UpdateAgentPage />} />

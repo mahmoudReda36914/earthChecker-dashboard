@@ -1,299 +1,525 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import {
+  Loader2, AlertTriangle, ArrowLeft, Eye, X,
+  AlignLeft, Hash, Image, Star, Calendar,
+  MessageSquare, ChevronDown, List, Check,
+} from 'lucide-react'
+import { useForm } from '../apiHooks'
+import Dropdown from '../../../components/ui/Dropdown'
 
-/* ─── Individual field renderer ─── */
-function FieldPreview({ field, answer, setAnswer }) {
-  return (
-    <div className="rounded-xl p-5 bg-bg-glass backdrop-blur-lg border border-[rgba(143,163,184,0.1)]">
-      <p className="text-[0.9rem] font-semibold text-text-primary mb-3">
-        {field.label}
-        {field.required && <span className="text-copper ml-1">*</span>}
-      </p>
-
-      {field.type === 'Text Input' && (
-        <input
-          type="text"
-          value={answer || ''}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Your answer"
-          className="input-glass w-full"
-        />
-      )}
-
-      {field.type === 'Number' && (
-        <input
-          type="number"
-          value={answer || ''}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="0"
-          className="input-glass w-40"
-        />
-      )}
-
-      {field.type === 'Date' && (
-        <input
-          type="date"
-          value={answer || ''}
-          onChange={(e) => setAnswer(e.target.value)}
-          className="input-glass w-52"
-        />
-      )}
-
-      {field.type === 'Dropdown' && (
-        <select
-          value={answer || ''}
-          onChange={(e) => setAnswer(e.target.value)}
-          className="input-glass"
-        >
-          <option value="" disabled>Select an option</option>
-          {(field.options || []).map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-      )}
-
-      {field.type === 'Multiple Choice' && (
-        <div className="space-y-2.5">
-          {(field.options || []).map((opt) => (
-            <label key={opt} className="flex items-center gap-3 cursor-pointer group">
-              <div
-                onClick={() => setAnswer(opt)}
-                className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-                  answer === opt
-                    ? 'border-cyan bg-[rgba(0,212,255,0.2)]'
-                    : 'border-[rgba(143,163,184,0.3)] hover:border-[rgba(0,212,255,0.3)]'
-                }`}
-              >
-                {answer === opt && <div className="w-2 h-2 rounded-full bg-cyan shadow-[0_0_5px_rgba(0,212,255,0.7)]" />}
-              </div>
-              <span className="text-[0.85rem] text-steel group-hover:text-text-primary transition-colors">{opt}</span>
-            </label>
-          ))}
-        </div>
-      )}
-
-      {field.type === 'Checkbox' && (
-        <div className="space-y-2.5">
-          {(field.options || []).map((opt) => {
-            const selected = (answer || []).includes(opt)
-            return (
-              <label key={opt} className="flex items-center gap-3 cursor-pointer group">
-                <div
-                  onClick={() =>
-                    setAnswer(selected
-                      ? (answer || []).filter((v) => v !== opt)
-                      : [...(answer || []), opt])
-                  }
-                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-                    selected
-                      ? 'border-cyan bg-[rgba(0,212,255,0.2)]'
-                      : 'border-[rgba(143,163,184,0.3)] hover:border-[rgba(0,212,255,0.3)]'
-                  }`}
-                >
-                  {selected && (
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="3">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                </div>
-                <span className="text-[0.85rem] text-steel group-hover:text-text-primary transition-colors">{opt}</span>
-              </label>
-            )
-          })}
-        </div>
-      )}
-
-      {field.type === 'Linear Scale' && (
-        <div className="flex items-center gap-3 flex-wrap">
-          {field.scaleMinLabel && (
-            <span className="text-[0.75rem] text-text-muted shrink-0">{field.scaleMin ?? 1} — {field.scaleMinLabel}</span>
-          )}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {Array.from(
-              { length: Math.max(0, (field.scaleMax ?? 5) - (field.scaleMin ?? 1) + 1) },
-              (_, i) => i + (field.scaleMin ?? 1)
-            ).map((n) => (
-              <button
-                key={n}
-                onClick={() => setAnswer(n)}
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-[0.78rem] font-bold border transition-all ${
-                  answer === n
-                    ? 'bg-cyan border-cyan text-bg-primary shadow-[0_0_10px_rgba(0,212,255,0.5)]'
-                    : 'border-[rgba(143,163,184,0.25)] text-steel hover:border-[rgba(0,212,255,0.35)] hover:text-cyan'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          {field.scaleMaxLabel && (
-            <span className="text-[0.75rem] text-text-muted shrink-0">{field.scaleMax ?? 5} — {field.scaleMaxLabel}</span>
-          )}
-        </div>
-      )}
-
-      {field.type === 'Rating' && (
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} onClick={() => setAnswer(n)} className="transition-transform hover:scale-110">
-              <svg
-                width="30" height="30" viewBox="0 0 24 24"
-                fill={(answer ?? 0) >= n ? '#c87941' : 'none'}
-                stroke={(answer ?? 0) >= n ? '#c87941' : '#3d4f63'}
-                strokeWidth="1.5"
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {field.type === 'File Upload' && (
-        <label className="block rounded-lg border-2 border-dashed border-[rgba(143,163,184,0.2)] p-6 text-center cursor-pointer hover:border-[rgba(0,212,255,0.3)] transition-colors">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={answer ? '#00d4ff' : '#3d4f63'} strokeWidth="1.5" className="mx-auto mb-2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <p className={`text-[0.78rem] ${answer ? 'text-cyan' : 'text-steel'}`}>
-            {answer ? `Selected: ${answer}` : 'Click to upload or drag & drop'}
-          </p>
-          <input type="file" className="hidden" onChange={(e) => setAnswer(e.target.files[0]?.name)} />
-        </label>
-      )}
-    </div>
-  )
+/* ═══════════════════════════════════════════════════════════
+   Type metadata — icon + label for each section type
+   ═══════════════════════════════════════════════════════════ */
+const TYPE_META = {
+  short_text: { label: 'Short Answer',    Icon: AlignLeft     },
+  paragraph:  { label: 'Paragraph',       Icon: AlignLeft     },
+  number:     { label: 'Number',          Icon: Hash          },
+  radio:      { label: 'Multiple Choice', Icon: List          },
+  checkbox:   { label: 'Checkboxes',      Icon: List          },
+  select:     { label: 'Dropdown',        Icon: ChevronDown   },
+  image:      { label: 'Image Upload',    Icon: Image         },
+  rating:     { label: 'Rating',          Icon: Star          },
+  date:       { label: 'Date',            Icon: Calendar      },
+  note:       { label: 'Section Header',  Icon: MessageSquare },
 }
 
-/* ─── Main preview page ─── */
-export default function FormPreviewPage() {
-  const navigate    = useNavigate()
-  const { state }   = useLocation()
+/* ═══════════════════════════════════════════════════════════
+   Resolve form data:
+     1. If :formId in URL  → fetch from API
+     2. Otherwise          → read from sessionStorage (create-mode preview)
+   ═══════════════════════════════════════════════════════════ */
+function usePreviewForm(formId) {
+  const { data, isLoading } = useForm(formId ?? null)
+  if (formId) return { form: data, isLoading }
+  try {
+    const raw = sessionStorage.getItem('__formPreview__')
+    if (raw) return { form: JSON.parse(raw), isLoading: false }
+  } catch (_) { /* ignore */ }
+  return { form: null, isLoading: false }
+}
 
-  const formName = state?.formName || 'Untitled Form'
-  const formDesc = state?.formDesc || ''
-  const fields   = state?.fields  || []
+/* ═══════════════════════════════════════════════════════════
+   Section field renderer
+   ═══════════════════════════════════════════════════════════ */
+function SectionField({ section, idx, answer, onChange, isActive, onClick }) {
+  const meta = TYPE_META[section.type] ?? TYPE_META.short_text
+  const { Icon } = meta
 
-  const [answers,   setAnswers]   = useState({})
-  const [submitted, setSubmitted] = useState(false)
-
-  const setAnswer = (fieldId, value) =>
-    setAnswers((prev) => ({ ...prev, [fieldId]: value }))
-
-  /* ── Submitted screen ── */
-  if (submitted) {
+  /* ── Note / section header — no input ── */
+  if (section.type === 'note') {
     return (
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-cyan-muted border border-[rgba(0,212,255,0.3)] flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(0,212,255,0.15)]">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
+      <div className="rounded-xl overflow-hidden bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.15)] shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+        <div className="h-1 bg-gradient-to-r from-cyan via-[rgba(0,180,255,0.6)] to-transparent" />
+        <div className="px-6 py-5 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[rgba(0,212,255,0.1)] border border-[rgba(0,212,255,0.2)] shrink-0 mt-0.5">
+            <MessageSquare size={14} className="text-cyan" />
           </div>
-          <h2 className="font-orbitron text-xl font-extrabold text-text-primary mb-2 tracking-[-0.01em]">
-            Submitted!
-          </h2>
-          <p className="text-[0.88rem] text-steel mb-7">Your inspection form has been submitted successfully.</p>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => { setSubmitted(false); setAnswers({}) }}
-              className="px-5 py-2.5 rounded text-[0.75rem] font-semibold text-steel border border-[rgba(143,163,184,0.2)] bg-transparent transition-all hover:border-[rgba(0,212,255,0.25)] hover:text-text-primary"
-            >
-              Fill Again
-            </button>
-            <button onClick={() => navigate(-1)} className="btn-primary text-[0.75rem] py-[10px] px-5">
-              Back to Editor
-            </button>
+          <div>
+            <h3 className="font-orbitron text-[0.95rem] font-bold text-text-primary leading-tight">
+              {section.title || '(Section Header)'}
+            </h3>
+            {section.descriptions && (
+              <p className="text-[0.8rem] text-steel mt-1.5 leading-[1.6]">{section.descriptions}</p>
+            )}
           </div>
         </div>
       </div>
     )
   }
 
-  /* ── Preview form ── */
+  const isAnswered =
+    answer !== undefined &&
+    answer !== '' &&
+    answer !== null &&
+    !(Array.isArray(answer) && answer.length === 0)
+
   return (
-    <div className="min-h-screen bg-bg-primary">
+    <div
+      onClick={onClick}
+      className={`rounded-xl overflow-hidden bg-[rgba(8,12,24,0.92)] backdrop-blur-xl border shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-200 cursor-default ${
+        isActive
+          ? 'border-[rgba(0,212,255,0.28)] shadow-[0_4px_32px_rgba(0,0,0,0.55),0_0_0_1px_rgba(0,212,255,0.06)]'
+          : 'border-[rgba(143,163,184,0.08)] hover:border-[rgba(0,212,255,0.15)]'
+      }`}
+    >
+      {/* Top accent bar */}
+      <div className={`h-[3px] transition-all duration-300 ${
+        isActive
+          ? 'bg-gradient-to-r from-cyan via-[rgba(0,180,255,0.8)] to-[rgba(0,212,255,0.2)]'
+          : isAnswered
+          ? 'bg-[rgba(0,212,255,0.18)]'
+          : 'bg-transparent'
+      }`} />
 
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 h-14 bg-[rgba(6,8,16,0.95)] backdrop-blur-lg border-b border-b-[rgba(0,212,255,0.07)] flex items-center px-6 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.4)]">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-[0.8rem] font-medium text-steel hover:text-text-primary transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Back to Editor
-        </button>
-
-        <div className="flex-1 flex items-center justify-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan shadow-[0_0_6px_rgba(0,212,255,0.8)] animate-dot-pulse" />
-          <span className="font-orbitron text-[0.62rem] font-bold tracking-[0.14em] uppercase text-cyan">
-            Preview Mode
-          </span>
-        </div>
-
-        {/* spacer to balance left button */}
-        <div className="w-28" />
-      </div>
-
-      {/* Form content */}
-      <div className="pt-14 pb-20 flex justify-center">
-        <div className="w-full max-w-xl px-4 py-8">
-
-          {/* Form header card — with cyan top border like Google Forms */}
-          <div className="rounded-xl mb-4 bg-bg-glass backdrop-blur-lg border border-[rgba(143,163,184,0.1)] overflow-hidden">
-            <div className="h-1.5 bg-gradient-to-r from-cyan-dark to-cyan" />
-            <div className="px-6 py-5">
-              <h1 className="font-orbitron text-[1.2rem] font-extrabold text-text-primary tracking-[-0.01em] leading-[1.2]">
-                {formName}
-              </h1>
-              {formDesc && (
-                <p className="text-[0.85rem] text-steel mt-2 leading-[1.6]">{formDesc}</p>
+      <div className="p-5 sm:p-6">
+        {/* ── Card header ── */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          {/* Number + title */}
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center border shrink-0 mt-0.5 transition-all ${
+              isActive
+                ? 'bg-[rgba(0,212,255,0.15)] border-[rgba(0,212,255,0.4)]'
+                : 'bg-[rgba(0,212,255,0.06)] border-[rgba(0,212,255,0.15)]'
+            }`}>
+              <span className="font-orbitron text-[0.58rem] font-bold text-cyan">{idx + 1}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[0.9rem] font-semibold text-text-primary leading-[1.4]">
+                {section.title || '(Untitled question)'}
+                {section.isRequired && <span className="text-copper ml-1">*</span>}
+              </p>
+              {section.descriptions && (
+                <p className="text-[0.75rem] text-steel mt-1 leading-[1.5]">{section.descriptions}</p>
               )}
             </div>
           </div>
 
-          {/* Fields */}
-          {fields.length === 0 ? (
-            <div className="rounded-xl p-10 bg-bg-glass backdrop-blur-lg border border-[rgba(143,163,184,0.1)] text-center">
-              <p className="text-[0.85rem] text-text-muted">No fields added yet. Go back and add some fields.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {fields.map((field) => (
-                <FieldPreview
-                  key={field.id}
-                  field={field}
-                  answer={answers[field.id]}
-                  setAnswer={(v) => setAnswer(field.id, v)}
-                />
+          {/* Type badge */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[rgba(143,163,184,0.05)] border border-[rgba(143,163,184,0.1)] shrink-0">
+            <Icon size={10} className="text-steel" />
+            <span className="text-[0.58rem] font-semibold text-text-muted uppercase tracking-[0.08em] whitespace-nowrap hidden sm:block">
+              {meta.label}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Answer area (indented to align with title) ── */}
+        <div className="pl-10">
+
+          {/* Short answer */}
+          {section.type === 'short_text' && (
+            <input
+              type="text"
+              value={answer ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Your answer"
+              className="input-glass w-full"
+            />
+          )}
+
+          {/* Paragraph */}
+          {section.type === 'paragraph' && (
+            <textarea
+              value={answer ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Your answer"
+              rows={4}
+              className="input-glass w-full resize-none"
+            />
+          )}
+
+          {/* Number */}
+          {section.type === 'number' && (
+            <input
+              type="number"
+              value={answer ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="0"
+              className="input-glass w-48"
+            />
+          )}
+
+          {/* Radio */}
+          {section.type === 'radio' && (
+            <div className="space-y-3">
+              {(section.options ?? []).map((opt, i) => (
+                <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    onClick={() => onChange(opt)}
+                    className={`w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                      answer === opt
+                        ? 'border-cyan bg-[rgba(0,212,255,0.12)]'
+                        : 'border-[rgba(143,163,184,0.28)] group-hover:border-[rgba(0,212,255,0.4)]'
+                    }`}
+                  >
+                    {answer === opt && (
+                      <div className="w-2 h-2 rounded-full bg-cyan shadow-[0_0_6px_rgba(0,212,255,0.7)]" />
+                    )}
+                  </div>
+                  <span className={`text-[0.85rem] transition-colors ${
+                    answer === opt ? 'text-text-primary' : 'text-steel group-hover:text-text-primary'
+                  }`}>{opt}</span>
+                </label>
               ))}
             </div>
           )}
 
-          {/* Footer */}
-          {fields.length > 0 && (
-            <div className="mt-8 flex items-center justify-between">
-              <button
-                onClick={() => setSubmitted(true)}
-                className="btn-primary px-8 py-[11px]"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="9 11 12 14 22 4"/>
-                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                </svg>
-                Submit
-              </button>
-              <button
-                onClick={() => setAnswers({})}
-                className="text-[0.75rem] text-text-muted hover:text-steel transition-colors"
-              >
-                Clear form
-              </button>
+          {/* Checkboxes */}
+          {section.type === 'checkbox' && (
+            <div className="space-y-3">
+              {(section.options ?? []).map((opt, i) => {
+                const selected = Array.isArray(answer) ? answer.includes(opt) : false
+                return (
+                  <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                    <div
+                      onClick={() => {
+                        const arr = Array.isArray(answer) ? answer : []
+                        onChange(selected ? arr.filter((v) => v !== opt) : [...arr, opt])
+                      }}
+                      className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                        selected
+                          ? 'border-cyan bg-[rgba(0,212,255,0.12)]'
+                          : 'border-[rgba(143,163,184,0.28)] group-hover:border-[rgba(0,212,255,0.4)]'
+                      }`}
+                    >
+                      {selected && (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="3.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`text-[0.85rem] transition-colors ${
+                      selected ? 'text-text-primary' : 'text-steel group-hover:text-text-primary'
+                    }`}>{opt}</span>
+                  </label>
+                )
+              })}
             </div>
           )}
+
+          {/* Dropdown — use global Dropdown component */}
+          {section.type === 'select' && (
+            <Dropdown
+              value={answer ?? ''}
+              onChange={onChange}
+              options={(section.options ?? []).map((o) => ({ value: o, label: o }))}
+              placeholder="Select an option"
+            />
+          )}
+
+          {/* Image upload */}
+          {section.type === 'image' && (
+            <label className="block rounded-xl border-2 border-dashed border-[rgba(143,163,184,0.18)] p-8 text-center cursor-pointer hover:border-[rgba(0,212,255,0.35)] hover:bg-[rgba(0,212,255,0.02)] transition-all group">
+              <div className="w-12 h-12 rounded-xl bg-[rgba(0,212,255,0.06)] border border-[rgba(0,212,255,0.15)] flex items-center justify-center mx-auto mb-3 group-hover:bg-[rgba(0,212,255,0.1)] transition-all">
+                <Image size={20} className={answer ? 'text-cyan' : 'text-steel'} />
+              </div>
+              <p className={`text-[0.82rem] font-medium ${answer ? 'text-cyan' : 'text-steel'}`}>
+                {answer ? `Selected: ${answer}` : 'Click to upload image'}
+              </p>
+              <p className="text-[0.68rem] text-text-muted mt-1">JPEG · PNG · WEBP</p>
+              {section.assignedBotId && (
+                <p className="text-[0.68rem] text-copper mt-2 flex items-center justify-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-copper inline-block animate-dot-pulse" />
+                  AI agent will analyze this image
+                </p>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onChange(e.target.files[0]?.name ?? '')}
+              />
+            </label>
+          )}
+
+          {/* Rating */}
+          {section.type === 'rating' && (
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => onChange(n)}
+                  className="transition-all duration-150 hover:scale-110 active:scale-95"
+                >
+                  <svg
+                    width="32" height="32" viewBox="0 0 24 24"
+                    fill={(answer ?? 0) >= n ? '#c87941' : 'none'}
+                    stroke={(answer ?? 0) >= n ? '#c87941' : 'rgba(143,163,184,0.3)'}
+                    strokeWidth="1.5"
+                    style={{ filter: (answer ?? 0) >= n ? 'drop-shadow(0 0 5px rgba(200,121,65,0.55))' : 'none' }}
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+              ))}
+              {answer > 0 && (
+                <span className="ml-2 text-[0.75rem] text-copper font-semibold">{answer} / 5</span>
+              )}
+            </div>
+          )}
+
+          {/* Date */}
+          {section.type === 'date' && (
+            <input
+              type="date"
+              value={answer ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+              className="input-glass w-56"
+            />
+          )}
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Main Preview Page
+   ═══════════════════════════════════════════════════════════ */
+export default function FormPreviewPage() {
+  const { formId } = useParams()
+  const navigate   = useNavigate()
+
+  const { form, isLoading } = usePreviewForm(formId)
+  const [answers,   setAnswers]   = useState({})
+  const [activeIdx, setActiveIdx] = useState(null)
+
+  const setAnswer = (idx, value) => setAnswers((prev) => ({ ...prev, [idx]: value }))
+
+  /* ── Loading ── */
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 size={32} className="animate-spin text-cyan" />
+        <span className="font-orbitron text-[0.6rem] font-bold tracking-[0.18em] uppercase text-text-muted">
+          Loading form…
+        </span>
+      </div>
+    </div>
+  )
+
+  /* ── Not found ── */
+  if (!form) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4">
+      <div className="w-16 h-16 rounded-2xl bg-[rgba(200,121,65,0.08)] border border-[rgba(200,121,65,0.2)] flex items-center justify-center mb-2">
+        <AlertTriangle size={28} className="text-copper" />
+      </div>
+      <h2 className="font-orbitron text-[1rem] font-bold text-text-primary">Form not found</h2>
+      <p className="text-[0.82rem] text-steel max-w-[280px]">
+        Preview data expired or this form doesn't exist.
+      </p>
+      <button
+        onClick={() => window.opener ? window.close() : navigate(-1)}
+        className="btn-ghost text-[0.72rem] mt-2 py-[9px] px-[18px]"
+      >
+        <ArrowLeft size={13} />
+        {window.opener ? 'Close tab' : 'Go back'}
+      </button>
+    </div>
+  )
+
+  const sections = form.sections ?? []
+
+  /* Progress calculation */
+  const inputIdxs = sections.reduce((acc, s, i) => {
+    if (s.type !== 'note') acc.push(i)
+    return acc
+  }, [])
+  const total   = inputIdxs.length
+  const answered = inputIdxs.filter((i) => {
+    const ans = answers[i]
+    return ans !== undefined && ans !== '' && ans !== null &&
+      !(Array.isArray(ans) && ans.length === 0)
+  }).length
+  const progress = total > 0 ? Math.round((answered / total) * 100) : 0
+
+  return (
+    <div className="min-h-screen">
+
+      {/* ── Fixed top bar ── */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <div className="h-14 bg-[rgba(6,8,16,0.97)] backdrop-blur-xl border-b border-[rgba(0,212,255,0.08)] flex items-center px-5 gap-4 shadow-[0_2px_24px_rgba(0,0,0,0.55)]">
+
+          {/* Left — close / back */}
+          <button
+            onClick={() => window.opener ? window.close() : navigate(-1)}
+            className="flex items-center gap-2 text-[0.78rem] font-medium text-steel hover:text-text-primary transition-colors shrink-0 group"
+          >
+            <div className="w-7 h-7 rounded-lg border border-[rgba(143,163,184,0.15)] flex items-center justify-center group-hover:border-[rgba(0,212,255,0.3)] group-hover:bg-[rgba(0,212,255,0.06)] group-hover:text-cyan transition-all">
+              <X size={12} />
+            </div>
+            <span className="hidden sm:inline">
+              {window.opener ? 'Close preview' : 'Back'}
+            </span>
+          </button>
+
+          {/* Center — badge + form name */}
+          <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Eye size={10} className="text-cyan" />
+              <span className="font-orbitron text-[0.52rem] font-bold tracking-[0.2em] uppercase text-cyan">
+                Preview Mode
+              </span>
+            </div>
+            <p className="text-[0.75rem] font-semibold text-text-primary truncate max-w-[260px] sm:max-w-[440px] leading-tight">
+              {form.name || 'Untitled Form'}
+            </p>
+          </div>
+
+          {/* Right — progress + label */}
+          <div className="flex items-center gap-3 shrink-0">
+            {total > 0 && (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="text-[0.65rem] text-text-muted tabular-nums">{answered}/{total}</span>
+                <div className="w-20 h-1.5 rounded-full bg-[rgba(143,163,184,0.1)] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan to-[rgba(0,180,255,0.8)] transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <span className="text-[0.6rem] text-text-muted px-2 py-1 rounded border border-[rgba(143,163,184,0.1)] bg-[rgba(143,163,184,0.04)] whitespace-nowrap">
+              Submit disabled
+            </span>
+          </div>
+        </div>
+
+        {/* Full-width progress line */}
+        {total > 0 && (
+          <div className="h-[2px] bg-[rgba(0,212,255,0.05)]">
+            <div
+              className="h-full bg-gradient-to-r from-cyan via-[rgba(0,180,255,0.9)] to-[rgba(0,212,255,0.4)] transition-all duration-700 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Scrollable content ── */}
+      <div className="pt-16 pb-28 flex justify-center px-4">
+        <div className="w-full max-w-[680px] py-8 space-y-4">
+
+          {/* ── Form header card ── */}
+          <div className="rounded-xl overflow-hidden bg-[rgba(8,12,24,0.92)] backdrop-blur-xl border border-[rgba(0,212,255,0.12)] shadow-[0_4px_28px_rgba(0,0,0,0.55)]">
+            <div className="h-2.5 bg-gradient-to-r from-cyan via-[rgba(0,180,255,0.8)] to-[rgba(0,212,255,0.25)]" />
+            <div className="px-6 sm:px-8 py-6">
+              <h1 className="font-orbitron text-[1.3rem] sm:text-[1.45rem] font-extrabold text-text-primary tracking-[-0.01em] leading-[1.2]">
+                {form.name || 'Untitled Form'}
+              </h1>
+              {form.description && (
+                <p className="text-[0.85rem] text-steel mt-2.5 leading-[1.7]">{form.description}</p>
+              )}
+
+              {total > 0 && (
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[rgba(143,163,184,0.07)]">
+                  <span className="text-[0.68rem] text-text-muted">
+                    {total} question{total !== 1 ? 's' : ''}
+                  </span>
+                  {sections.some((s) => s.isRequired) && (
+                    <>
+                      <span className="text-text-muted text-[0.6rem]">·</span>
+                      <span className="text-[0.68rem] text-copper">* Required fields</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Empty state ── */}
+          {sections.length === 0 && (
+            <div className="rounded-xl bg-[rgba(8,12,24,0.92)] backdrop-blur-xl border border-[rgba(143,163,184,0.07)] flex flex-col items-center justify-center py-16 gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-[rgba(0,212,255,0.05)] border border-[rgba(0,212,255,0.1)] flex items-center justify-center">
+                <MessageSquare size={24} className="text-[rgba(0,212,255,0.25)]" />
+              </div>
+              <p className="text-[0.82rem] text-text-muted">No questions in this form yet.</p>
+            </div>
+          )}
+
+          {/* ── Section cards ── */}
+          {sections.map((section, idx) => (
+            <SectionField
+              key={section._id ?? section._lid ?? idx}
+              section={section}
+              idx={idx}
+              answer={answers[idx]}
+              onChange={(v) => { setAnswer(idx, v); setActiveIdx(idx) }}
+              isActive={activeIdx === idx}
+              onClick={() => setActiveIdx(idx)}
+            />
+          ))}
+
+          {/* ── Footer submit card ── */}
+          {sections.length > 0 && (
+            <div className="rounded-xl overflow-hidden bg-[rgba(8,12,24,0.92)] backdrop-blur-xl border border-[rgba(143,163,184,0.08)] shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+              <div className="px-6 py-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  {/* Disabled submit button */}
+                  <button
+                    type="button"
+                    disabled
+                    title="Submit is disabled in preview mode"
+                    className="flex items-center gap-2.5 px-6 py-[10px] rounded bg-[rgba(0,212,255,0.05)] border border-[rgba(0,212,255,0.15)] text-[rgba(0,212,255,0.28)] font-orbitron text-[0.68rem] font-bold tracking-[0.1em] uppercase cursor-not-allowed select-none"
+                  >
+                    <Check size={12} />
+                    Submit Response
+                  </button>
+                  <span className="text-[0.65rem] text-text-muted hidden sm:block">
+                    Disabled in preview mode
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => { setAnswers({}); setActiveIdx(null) }}
+                  className="text-[0.72rem] text-text-muted hover:text-steel transition-colors whitespace-nowrap"
+                >
+                  Clear form
+                </button>
+              </div>
+
+              {/* Completion progress inside footer */}
+              {total > 0 && (
+                <div className="px-6 pb-5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[0.63rem] text-text-muted">Completion</span>
+                    <span className="text-[0.63rem] font-bold text-cyan tabular-nums">{progress}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[rgba(143,163,184,0.1)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan to-[rgba(0,180,255,0.7)] transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
     </div>
