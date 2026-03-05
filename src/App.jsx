@@ -16,10 +16,14 @@ import FormsBuilderPage from './features/forms/pages/FormsBuilderPage'
 import FormPreviewPage  from './features/forms/pages/FormPreviewPage'
 import CreateFormPage   from './features/forms/pages/CreateFormPage'
 import OrderFormsPage   from './features/forms/pages/OrderFormsPage'
+import StaffPage        from './features/staff/pages/StaffPage'
+import CreateStaffPage  from './features/staff/pages/CreateStaffPage'
 import AIAgentsPage     from './features/agents/pages/AIAgentsPage'
 import CreateAgentPage  from './features/agents/pages/CreateAgentPage'
 import UpdateAgentPage  from './features/agents/pages/UpdateAgentPage'
 import CyclesPage       from './features/cycles/pages/CyclesPage'
+import CreateCyclePage  from './features/cycles/pages/CreateCyclePage'
+import CycleDetailPage  from './features/cycles/pages/CycleDetailPage'
 import SubmissionsPage  from './features/submissions/pages/SubmissionsPage'
 import SettingsPage     from './features/settings/pages/SettingsPage'
 
@@ -54,10 +58,16 @@ export default function App() {
             <Route path="modules/:id/forms/:formId/edit"     element={<CreateFormPage />} />
             <Route path="modules/:id/forms/order"            element={<OrderFormsPage />} />
             <Route path="forms"                              element={<FormsBuilderPage />} />
+            <Route path="staff"                              element={<StaffPage />} />
+            <Route path="staff/create"                    element={<CreateStaffPage />} />
+            <Route path="staff/:staffId/edit"             element={<CreateStaffPage />} />
             <Route path="agents"                element={<AIAgentsPage />} />
             <Route path="agents/create"         element={<CreateAgentPage />} />
             <Route path="agents/:id/update"     element={<UpdateAgentPage />} />
-            <Route path="cycles"                element={<CyclesPage />} />
+            <Route path="cycles"                   element={<CyclesPage />} />
+            <Route path="cycles/create"           element={<CreateCyclePage />} />
+            <Route path="cycles/:cycleId"         element={<CycleDetailPage />} />
+            <Route path="cycles/:cycleId/edit"    element={<CreateCyclePage />} />
             <Route path="submissions"           element={<SubmissionsPage />} />
             <Route path="settings"              element={<SettingsPage />} />
           </Route>

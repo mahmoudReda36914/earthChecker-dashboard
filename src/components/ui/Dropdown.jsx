@@ -72,13 +72,13 @@ export default function Dropdown({
       {/* ── Panel ── */}
       {open && (
         <div className="
-          absolute left-0 right-0 top-full mt-1 z-50
+          absolute left-0 right-0 top-full mt-1 z-[9999]
           rounded-xl overflow-hidden
           bg-[rgba(8,12,20,0.98)]
           border border-[rgba(0,212,255,0.18)]
           shadow-[0_16px_48px_rgba(0,0,0,0.65)]
-          max-h-60 overflow-y-auto
-        ">
+          overflow-y-auto
+        " style={{ maxHeight: 'calc(3 * 42px)' }}>
           {options.length === 0 ? (
             <div className="px-4 py-3 text-[0.8rem] text-text-muted">
               No options available
